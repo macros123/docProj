@@ -1,24 +1,44 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, {useEffect, useState} from 'react';
 import './App.css';
 
+const requestOptions = {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' }
+};
 function App() {
+  const [selectDate, setSelectDate] = useState([{date: '2020-08-21T13:22:25.799Z'}, {date: '2020-09-21T13:22:25.799Z'}]);
+
+  useEffect(() => {
+
+    fetch('http://localhost:3001/days', requestOptions)
+        .then(response => response.json())
+        .then(data => {
+          const tmp = data.slice();
+          tmp.unshift({date: 'pick'});
+          return setSelectDate(tmp)
+        });
+
+  }, []);
+
+  function dayChangeHandler(e:any): void {
+      console.log(e.target.value)
+
+      fetch(`http://localhost:3001/docs?day=${e.target.value}`, requestOptions)
+          .then(response => response.json())
+          .then(data => {
+              console.log(data)
+          });
+    };
+
+    const options = selectDate.map((e, i) => {
+        return <option value={e.date} key={i}>{e.date}</option>;
+    })
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <label htmlFor="cars">Choose a day:</label>
+      <select id="cars" name="cars" onChange={dayChangeHandler}>
+          {options}
+      </select>
     </div>
   );
 }

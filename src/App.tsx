@@ -3,20 +3,32 @@ import './App.css';
 
 const requestOptions = {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
+    RequestMode: "no-cors"
 };
 function App() {
   const [selectDate, setSelectDate] = useState([{date: '2020-08-21T13:22:25.799Z'}, {date: '2020-09-21T13:22:25.799Z'}]);
 
   useEffect(() => {
 
-    fetch('http://localhost:3001/days', requestOptions)
-        .then(response => response.json())
-        .then(data => {
-          const tmp = data.slice();
+
+        fetch('http://localhost:3001/days', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },mode: 'no-cors'})
+      .then(res => { console.log(res);return res.json()})
+      .then(
+        (result) => {
+          console.log(result)
+          const tmp = result.slice();
           tmp.unshift({date: 'pick'});
           return setSelectDate(tmp)
-        });
+        },
+        // Примечание: важно обрабатывать ошибки именно здесь, а не в блоке catch(),
+        // чтобы не перехватывать исключения из ошибок в самих компонентах.
+        (error) => {
+          console.log(error)
+        }
+      )
 
   }, []);
 
@@ -36,7 +48,7 @@ function App() {
   return (
     <div className="App">
       <label htmlFor="cars">Choose a day:</label>
-      <select id="cars" name="cars" onChange={dayChangeHandler}>
+      <select id="cars" name="cars" >
           {options}
       </select>
     </div>

@@ -44,7 +44,50 @@ const fillDoctorDay = (Doctor: any, Note: any, date: Date): void => {
 
 }
 
-const fillDays = (Day: any, Doctor: any, Note: any, count: number):void => {
+const fillDays = (Day: any, Doctor: any, Note: any, count: number): void => {
+    const doctors = [
+        'Школвский Борис Елизарович',
+        'Воронова Татьяна Ильевна',
+        'Барсова Лилия Олеговна',
+        'Барсова Лилия Олеговна'
+    ];
+
+    for(let i in doctors) {
+        const doc = new Doctor({
+            _id: new mongoose.Types.ObjectId(),
+            id: i,
+            name: doctors[i],
+        });
+        doc.save(function (err: any) {
+            if (err) {
+                console.log('qwert!');
+                return;
+            }
+            //fillDay(Note, doc._id, date);
+        })
+    }
+
+    const today = new Date();
+    const tomorrow = new Date(today);
+    for(let i = 0; i < count; i++) {
+        const oneDay = new Day({
+            _id: new mongoose.Types.ObjectId(),
+            date: tomorrow.setDate(tomorrow.getDate() + 1),
+        });
+
+        oneDay.save(function (err: any) {
+            if (err) {
+                console.log('errror!');
+                return;
+            }
+            tomorrow.setDate(tomorrow.getDate() + 1)
+           // fillDoctorDay(Doctor, Note, oneDay.date);
+        })
+    }
+
+}
+
+const fillDays1 = (Day: any, Doctor: any, Note: any, count: number):void => {
 
     const today = new Date();
     const tomorrow = new Date(today);
@@ -65,4 +108,36 @@ const fillDays = (Day: any, Doctor: any, Note: any, count: number):void => {
     }
 
 }
-export default fillDays;
+
+const fillNotes = (data: any, Note: any): void => {
+    
+    const doctors = data.doctors;
+    const days = data.days;
+
+    for(let x of doctors) {
+        for (let y of days) {            
+            for(let i = 9; i < 18; i+=0.5) {
+                const note = new Note({
+                    _id: new mongoose.Types.ObjectId(),
+                    isEmpty: true,
+                    time: Math.round(i-i%1).toString().padStart(2, '0').concat( (i%1 > 0) ? '-30' : '-00'),
+                    docId: x.id,
+                    date: y.date,
+                    data: {
+                        name: '',
+                        time: new Date(),
+                        report: ''
+                    }
+                });
+                note.save();
+            }
+        }
+    }
+    
+    
+
+
+
+    
+}
+export default {fillDays, fillNotes};

@@ -1,0 +1,22 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    background-color: antiquewhite;
+    width: 700px;
+    margin: 0 auto;
+    padding: 15px;
+}
+label {
+    margin: 10px;
+}
+input[type="text"],
+select {
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+    background: #ffffff !important;
+    outline: none;
+    height: 24px;
+    width: 320px;
+    font-size: 14px;
+    font-family: Tahoma;
+}

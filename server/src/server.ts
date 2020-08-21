@@ -3,45 +3,16 @@ const mongoose =  require('mongoose');
 const bodyParser = require('body-parser');
 import func from './fillTheBase';
 
-// Create a new express app instance
+// Create a server instances
 mongoose.connect('mongodb://127.0.0.1/test', {useNewUrlParser: true, useUnifiedTopology: true});
 mongoose.Promise = global.Promise;
 const db = mongoose.connection;
 const Schema = mongoose.Schema;
 
-const daySchema = Schema({
-    _id: Schema.Types.ObjectId,
-    date: Date,
-    notes: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Note'
-    }]
-})
-const doctorSchema = Schema({
-    _id: Schema.Types.ObjectId,
-    id: Number,
-    name: String,
-    notes: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Note'
-    }]
-})
-const noteSchema = Schema({
-    _id: Schema.Types.ObjectId,
-    isEmpty: Boolean,
-    time: String,
-    docId: Number,
-    date: Date,
-    data: {
-        name: String,
-        time: Date,
-        report: String
-    }
-})
-
-noteSchema.statics.getAll = function () {
-    return this.find({time: '09-00'});
-}
+//initial schemas
+const daySchema = func.daySchema
+const doctorSchema = func.doctorSchema
+const noteSchema = func.noteSchema
 
 const Note = mongoose.model('Note', noteSchema);
 const Doctor = mongoose.model('Doctor', doctorSchema);
@@ -49,17 +20,41 @@ const Day = mongoose.model('Day', daySchema);
 
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 
-
 const app: express.Application = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 
 
+//drop db before load data into
+db.dropDatabase().then(() =>
+{
+    func.fillDaysDocs(Day, Doctor, Note, 5);
+})
+
+type timeDoc = {
+    doctors: Array<object>,
+    days: Array<object>
+}
+
+//fill db after timeout
+const fill = function () {
+    const response: timeDoc = {doctors: [], days: []};
+    Doctor.find({}, function (err: Error, data: Array<object>) {
+        response.doctors = data
+        Day.find({}, function (err: Error, data1: Array<object>) {
+            console.log('Base has filled')
+            response.days = data1
+            func.fillNotes(response, Note);
+        })
+    })
+}
+setTimeout(fill, 3000)
+
 
 ////////////GET DAYS FOR PARAM
 app.get('/days', function (req, res) {
-    //Get days 
+    //Get days
     console.log(`request get /days`, req.body)
-    Day.find({}, function (err: any, data: any) {
+    Day.find({}, function (err: Error, data: Array<object>) {
         res.send(data)
     })
 });
@@ -67,7 +62,8 @@ app.get('/days', function (req, res) {
 ////////////GET DOCTORS
 app.get('/docs', function (req, res) {
     //Get doctors by day
-    Doctor.find({}, function (err: any, data: any) {
+    console.log(`request get /docs`, req.body)
+    Doctor.find({}, function (err: Error, data: Array<object>) {
         res.send(data)
     })
 });
@@ -75,7 +71,7 @@ app.get('/docs', function (req, res) {
 ////////////GET NOTES FOR SECOND PAGE
 app.get('/oneday', function (req, res) {
     //notes by doc and day
-    Note.find({docId: req.query.docId, date: req.query.day}, function (err: any, data: any) {
+    Note.find({docId: req.query.docId, date: req.query.day}, null, {sort: {_id: 1}}, function (err: Error, data: Array<object>) {
         res.send(data)
     })
 });
@@ -83,72 +79,34 @@ app.get('/oneday', function (req, res) {
 ////////////GET NOTES FOR PARAM
 app.get('/notesd', function (req, res) {
     //notes by doc
-    Note.find({docId: req.query.docId}, function (err: any, data: any) {
+    Note.find({docId: req.query.docId}, null, {sort: {_id: 1}}, function (err: Error, data: Array<object>) {
         res.send(data)
     })
 });
 
-////////////POST NOTES FOR PARAM
+////////////POST CHANGED NOTE
 app.post('/write', function (req, res) {
-    //notes by doc
-    Note.findById(req.body.id, function (err: any, note: any) {
+    Note.findById(req.query.id, function (err: Error, note: any) {
         if (err) throw err;
 
         note.isEmpty = false;
         note.data = {
-            name: req.body.name,
+            name: req.query.name,
             time: new Date(),
-            report: req.body.report
+            report: req.query.report
         }
-        note.save(function(err: any, data: any) {
-            if (err) throw err;             
-            res.send('success');
+        note.save(function(err: Error) {
+            if (err) throw err;
+            res.send({msg: 'succes'});
         });
     })
 });
 
 app.get('/write', function (req, res) {
     //notes by doc
-    Note.find({_id: '5f3ebe582c3e891324b0922d'}, function (err: any, data: any) {
+    Note.findById(req.query.id, function (err: Error, data: Array<object>) {
         res.send(data)
     })
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-type timeDoc = {
-    doctors: Array<object>,
-    days: Array<object>
-}
-app.post('/notess', function (req, res) {
-    //Get doctors by day
-    const response: timeDoc = {doctors: [], days: []};
-    Doctor.find({}, function (err: any, data: any) {
-        response.doctors = data
-        Day.find({}, function (err: any, data1: any) {
-            response.days = data1
-            func.fillNotes(response, Note);
-            res.send('ok')
-        })
-    })
-});
-
-app.post('/addd', function (req, res) {
-
-    func.fillDays(Day, Doctor, Note, 5);
-    res.send('База заполнена');
-
 });
 
 app.listen(3001, function () {
